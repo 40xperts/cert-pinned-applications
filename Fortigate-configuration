@@ -1,0 +1,11 @@
+config system external-resource
+    edit "40xperts URLs"
+        set type domain
+        set category 192
+        set resource "https://update-me.now/url_list"
+    next
+    edit "40xperts IPs"
+        set type address
+        set resource "https://update-me.now/ip_list"
+    next
+end
