@@ -1,56 +1,68 @@
-# CERT Pinned Applications Threat Feed
+# FortiGate External Threat Feeds
 
 ## Purpose
-This repository provides plain-text indicator lists that FortiGate can ingest as URL-based external threat feeds. Use it to distribute a curated set of certificate-pinned application endpoints so they can be monitored, restricted, or blocked by Fortinet appliances without manually editing each firewall.
+This directory contains plain-text indicator lists that FortiGate can ingest as external threat feeds. Use them to distribute curated certificate-pinned application data so Fortinet appliances can monitor, restrict, or block traffic without editing each firewall manually.
 
 ## Repository Layout
-- `application_list` – human-readable inventory of pinned applications and the endpoints they depend on.
-- `url_list` – FortiGate-ready feed consumed by the firewall; each line is an indicator drawn from `application_list`.
+- `application_list` – human-readable inventory describing which applications depend on which indicators.
+- `domain_list` – FortiGate-ready FQDN feed; each entry is a domain or subdomain derived from the inventory.
+- `url_list` – FortiGate-ready URL feed; each entry is a full URL that requires path-level matching.
 
 ## General Formatting Rules
 - Files are ASCII text with Unix line endings (`\n`) and no BOM.
-- Indicators use lowercase where possible to keep matching consistent.
-- Blank lines are ignored but should be kept to a minimum.
-- Lines starting with `#` are treated as comments for maintainers and are ignored by FortiGate.
+- Prefer lowercase indicators to keep matches consistent.
+- Blank lines are ignored but should be minimized to simplify diff review.
+- Lines starting with `#` are comments for maintainers and are ignored by FortiGate.
+- Sort and deduplicate before committing to avoid connector churn.
 
-## Updating `application_list`
-This file tracks why a URL exists in the feed. Each entry should follow:
+## Maintaining `application_list`
+`application_list` documents the reason each indicator exists. Record entries using pipe-delimited fields:
 
 ```
-<application-name>|<platform>|<reason>|<url>
+<application-name>|<platform>|<reason>|<indicator>
 ```
 
-- `application-name`: Short display name (spaces allowed).
+- `application-name`: Concise display name (spaces allowed).
 - `platform`: OS or ecosystem, e.g., `ios`, `android`, `windows`.
-- `reason`: Brief justification such as `cert-pinned update service`.
-- `url`: Exact URL or domain that appears in `url_list`.
+- `reason`: Short justification such as `cert-pinned telemetry` or `mandatory update channel`.
+- `indicator`: The exact domain or URL string present in `domain_list` or `url_list`.
 
-Keep entries alphabetically sorted by application name to reduce merge conflicts. Duplicate URLs are allowed when multiple applications share them.
+Keep the file alphabetized by `application-name`. Duplicate indicators are acceptable when multiple applications share the same endpoint.
 
-## Updating `url_list`
-FortiGate expects a line-separated set of indicators. Use the exact value FortiGate must match (URL, FQDN, or subdomain). Examples:
+## Maintaining `domain_list`
+Use `domain_list` for bare domains or subdomains that FortiGate should evaluate using FQDN matching.
 
 ```
-# domains
+# example domains
 api.example-app.com
-cdn.example-app.com
-
-# explicit URLs
-https://downloads.example-app.com/updates/
+cdn.example-app.net
 ```
 
-- One indicator per line; do not add commas or quotes.
-- Leave protocol off unless the path matters; FortiGate treats bare domains as FQDN matches and full URLs as literal strings.
-- Avoid wildcard characters (`*`, `?`); FortiGate does not interpret them.
-- Keep the list sorted and deduplicated before commit.
+- One domain per line; omit protocol prefixes (`http://`).
+- Do not include wildcard characters (`*`, `?`); FortiGate does not expand them.
+- If a host requires both domain- and path-level control, list the FQDN here and the specific URL in `url_list`.
 
-## Publishing the Feed to FortiGate
-1. Commit and push changes to the repository.
-2. In FortiGate, create a URL threat feed under **Security Fabric → External Connectors → Create New → URL**.
-3. Point the feed URL to the raw Git hosting endpoint, for example: `https://raw.githubusercontent.com/<org>/<repo>/main/cert-pinned-applications/url_list`.
-4. Enable the connector and reference it inside web filtering profiles, policies, or automation stitches as needed.
+## Maintaining `url_list`
+Use `url_list` for indicators that require full URL matching (protocol and path).
+
+```
+# example urls
+https://downloads.example-app.com/updates/
+https://example-app.com/api/v1/ping
+```
+
+- One indicator per line; include protocol when a path is present.
+- Use trailing slashes when FortiGate must match only inside a directory.
+- Avoid query strings unless essential; FortiGate matches the literal string provided.
+
+## Publishing the Feeds to FortiGate
+1. Commit and push the updated lists.
+2. In FortiGate, create separate external connectors under **Security Fabric → External Connectors → Create New**:
+	- **URL Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/url_list`.
+	- **Domain Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/domain_list`.
+3. Enable the connectors and reference them in web filtering profiles, firewall policies, or automation stitches as required.
 
 ## Quality Checklist Before Commit
-- Verify URLs resolve to the intended application endpoints.
-- Ensure `application_list` and `url_list` stay in sync.
-- Run a quick duplicate check (e.g., `sort -u`) and confirm the firewall still ingests the feed without errors.
+- Confirm indicators resolve and belong to the documented applications.
+- Ensure `application_list` entries align with `domain_list` and `url_list`.
+- Run `sort -u` locally to remove duplicates and verify FortiGate ingests the feeds without errors.
