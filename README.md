@@ -6,6 +6,7 @@ This directory contains plain-text indicator lists that FortiGate can ingest as 
 ## Repository Layout
 - `application_list` – human-readable inventory describing which applications depend on which indicators.
 - `domain_list` – FortiGate-ready FQDN feed; each entry is a domain or subdomain derived from the inventory.
+- `ip_list` – FortiGate-ready IPv4 CIDR list for services tied to pinned applications.
 - `url_list` – FortiGate-ready URL feed; each entry is a full URL that requires path-level matching.
 
 ## General Formatting Rules
@@ -42,6 +43,20 @@ cdn.example-app.net
 - Do not include wildcard characters (`*`, `?`); FortiGate does not expand them.
 - If a host requires both domain- and path-level control, list the FQDN here and the specific URL in `url_list`.
 
+## Maintaining `ip_list`
+`ip_list` stores IPv4 or IPv6 addresses and CIDR ranges when a service exposes stable network blocks tied to a pinned application.
+
+```
+# example ip ranges
+140.82.112.0/20
+185.199.108.0/22
+```
+
+- One network per line using CIDR notation; single IPs should use `/32` (IPv4) or `/128` (IPv6).
+- Precede descriptive context with `#` on its own line instead of inline comments.
+- Only include ranges published by the service owner to avoid blocking unrelated tenants.
+- Review provider release notes frequently; CDNs and cloud hosts rotate addresses.
+
 ## Maintaining `url_list`
 Use `url_list` for indicators that require full URL matching (protocol and path).
 
@@ -58,11 +73,12 @@ https://example-app.com/api/v1/ping
 ## Publishing the Feeds to FortiGate
 1. Commit and push the updated lists.
 2. In FortiGate, create separate external connectors under **Security Fabric → External Connectors → Create New**:
-	- **URL Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/url_list`.
 	- **Domain Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/domain_list`.
+	- **URL Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/url_list`.
+	- **IP Feed** pointing to `https://raw.githubusercontent.com/<org>/<repo>/main/external-threat-feeds/ip_list`.
 3. Enable the connectors and reference them in web filtering profiles, firewall policies, or automation stitches as required.
 
 ## Quality Checklist Before Commit
 - Confirm indicators resolve and belong to the documented applications.
-- Ensure `application_list` entries align with `domain_list` and `url_list`.
+- Ensure `application_list` entries align with `domain_list`, `ip_list`, and `url_list`.
 - Run `sort -u` locally to remove duplicates and verify FortiGate ingests the feeds without errors.

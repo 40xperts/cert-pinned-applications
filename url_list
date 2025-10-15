@@ -1,1 +1,7 @@
+# cert-pinned application urls
+https://api.dropboxapi.com/2/files/list_folder
+https://api.github.com/graphql
+https://api.stripe.com/v1/charges
+https://graph.whatsapp.com/
+https://textsecure-service.whispersystems.org/v1/
 

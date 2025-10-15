@@ -1,0 +1,11 @@
+# cert-pinned application ip ranges
+# GitHub API endpoints (AS36459)
+140.82.112.0/20
+# GitHub CDN endpoints (AS36459)
+185.199.108.0/22
+# Dropbox API infrastructure (AS19679)
+162.125.64.0/20
+# Cloudflare range hosting Signal services (AS13335)
+104.18.0.0/20
+# Meta infrastructure serving WhatsApp APIs (AS32934)
+157.240.0.0/16
